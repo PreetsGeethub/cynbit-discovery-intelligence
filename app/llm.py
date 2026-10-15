@@ -220,6 +220,37 @@ Rules:
                     }
                 )
                 existing_questions.add(question.casefold())
+    
+    # Deterministic risk fallbacks for common discovery blockers.
+    if not result.potential_risks:
+        risks = []
+
+        if result.integrations.status == "unknown":
+            risks.append(
+                "Integration scope is unclear; implementation "
+                "effort and dependencies cannot yet be estimated."
+            )
+
+        if result.timeline.status == "unknown":
+            risks.append(
+                "The delivery timeline is unspecified, so "
+                "delivery feasibility cannot yet be assessed."
+            )
+
+        if result.budget.status == "unknown":
+            risks.append(
+                "Budget is unspecified; solution scope and "
+                "infrastructure choices need clarification."
+            )
+
+        if result.security_requirements.status == "unknown":
+            risks.append(
+                "Security and privacy requirements are unspecified; "
+                "data access and handling constraints need clarification."
+            )
+
+        result.potential_risks = risks
+
 
     return result
 
