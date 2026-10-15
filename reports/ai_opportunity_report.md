@@ -1,4 +1,3 @@
-@'
 # AI Opportunity Report: Cynbit Technologies
 
 **Project:** Cynbit Discovery Intelligence  
@@ -179,4 +178,6 @@ The current prototype's evidence matching is a useful safeguard, not a complete 
 
 ## 9. Conclusion
 
-Cynbit Discovery Intelligence is a focused opportunity to apply L
+Cynbit Discovery Intelligence is a focused opportunity to apply LLMs to a workflow adjacent to Cynbit's publicly described project inquiry and AI automation services. Its distinguishing feature is not simply generating a summary: it attempts to separate source-supported requirements from unknowns, expose scoping gaps, and make the next discovery conversation more actionable.
+
+The PoC demonstrates a technical approach. It does not yet establish production readiness or measurable business impact. The next decision should depend on evaluation results and feedback from people who understand the real discovery workflow.
