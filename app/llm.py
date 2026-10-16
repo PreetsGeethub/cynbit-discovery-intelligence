@@ -281,6 +281,10 @@ General rules:
             )
         except RateLimitError as retry_exc:
             raise ProviderRateLimitError from retry_exc
+        except APIStatusError as retry_exc:
+            if retry_exc.status_code in (402, 429):
+                raise ProviderRateLimitError from retry_exc
+            raise
     except APIStatusError as exc:
         # OpenRouter can report exhausted credits as HTTP 402 as well as 429.
         if exc.status_code in (402, 429):
