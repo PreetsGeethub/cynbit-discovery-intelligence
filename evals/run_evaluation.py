@@ -140,7 +140,15 @@ def main() -> int:
                 "potential_risks": output.potential_risks,
                 "notes": case.get("notes"),
             })
-        except Exception as exc:  # report failures; keep the evaluation moving
+        except KeyboardInterrupt:
+            elapsed = round(time.perf_counter() - started, 3)
+            record.update({
+                "ok": False,
+                "interrupted": True,
+                "elapsed_seconds": elapsed,
+                "error_type": "KeyboardInterrupt",
+                "error": "Interrupted by user; this case was not scored.",
+            })
             failures += 1
             elapsed = round(time.perf_counter() - started, 3)
             record.update({
@@ -151,6 +159,9 @@ def main() -> int:
             })
         results.append(record)
         print(f"[{'OK' if record['ok'] else 'FAIL'}] {case['id']} ({record['elapsed_seconds']}s)")
+        if record.get("interrupted"):
+            print("Evaluation interrupted; writing a partial report for completed cases.")
+            break
 
     total_expected = len(cases) * len(FIELDS)
     precision = safe_rate(tp, tp + fp)
@@ -169,8 +180,11 @@ def main() -> int:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "dataset_path": "evals/discovery_eval.json",
         "cases_requested": len(cases),
-        "cases_succeeded": len(cases) - failures,
-        "cases_failed": failures,
+        "cases_completed": len(results),
+        "cases_succeeded": sum(1 for item in results if item.get("ok")),
+        "cases_failed": sum(1 for item in results if not item.get("ok")),
+        "cases_not_run": max(0, len(cases) - len(results)),
+        "interrupted": any(item.get("interrupted") for item in results),
         "field_status_accuracy": field_accuracy,
         "stated_field_precision": precision,
         "stated_field_recall": recall,
@@ -209,7 +223,7 @@ def main() -> int:
     ):
         print(f"{key}: {summary[key]}")
     print(f"Full report: {output_path}")
-    return 1 if failures else 0
+    return 1 if failures or len(results) < len(cases) else 0
 
 
 if __name__ == "__main__":
