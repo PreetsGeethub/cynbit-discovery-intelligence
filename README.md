@@ -97,15 +97,27 @@ The dashboard defaults to `http://127.0.0.1:8000` for the API. To change it, set
 
 The response includes `project_goal`, `target_users`, `integrations`, `timeline`, `budget`, `security_requirements`, `missing_information`, `potential_risks`, and `discovery_questions`.
 
-## Tests
+## Tests and evaluation
 
-Run the local test suite:
+Run the offline test suite:
 
 ```powershell
 python -m pytest -q
 ```
 
-Tests should not require a live model call unless explicitly written to do so. Evaluation results should be reported only after they have actually been measured.
+Run the labeled evaluation suite (this calls the configured model and may incur API usage):
+
+```powershell
+python -m evals.run_evaluation
+```
+
+For a quick smoke run, evaluate only the first three cases:
+
+```powershell
+python -m evals.run_evaluation --limit 3
+```
+
+The evaluation dataset is in `evals/discovery_eval.json`. A timestamped, case-level report is written to `reports/evaluation_results.json`. It includes field-status accuracy, stated-field precision/recall/F1, literal evidence source-match rate, labeled value checks, missing-information exact-match rate, and latency. These are dataset-specific measurements, not a general guarantee of correctness. Review the report's limitations before quoting any score. Do not commit API keys or real client briefs.
 
 ## Reports
 
