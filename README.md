@@ -90,7 +90,7 @@ Open a second terminal, activate the same virtual environment, then run:
 streamlit run ui/streamlit_app.py
 ```
 
-The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. To change the API address, set `API_URL` before starting Streamlit.
+The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. To change the API address, set `API_URL` before starting Streamlit; to change the wait limit, set `API_REQUEST_TIMEOUT_SECONDS` in the Streamlit process environment.
 
 ## API example
 
