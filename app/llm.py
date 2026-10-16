@@ -188,7 +188,7 @@ def _parse_json_object(content: str) -> dict:
     )
 
 
-def _request_completion(brief: str):
+def _request_completion(brief: str, *, retry_invalid_json: bool = False):
     messages = [
         {
             "role": "system",
@@ -253,6 +253,14 @@ General rules:
         {"role": "user", "content": brief},
     ]
 
+    if retry_invalid_json:
+        messages[0]["content"] += (
+            "\n\nRETRY INSTRUCTION:\n"
+            "Your previous response was not a valid JSON object. Return the complete "
+            "required JSON object now. Do not output safety labels, commentary, Markdown, "
+            "or any text outside the JSON object. Follow the schema and evidence rules above."
+        )
+
     try:
         return client.chat.completions.create(
             model=model,
@@ -308,7 +316,23 @@ def analyze_brief(brief: str) -> DiscoveryExtraction:
             f"Finish reason: {choice.finish_reason}"
         )
 
-    data = _parse_json_object(content)
+    try:
+        data = _parse_json_object(content)
+    except ValueError:
+        # Free-model routing can occasionally return non-JSON text. Retry once
+        # with an explicit correction instruction before failing the request.
+        print("Model returned invalid JSON; retrying once with stricter instructions.")
+        response = _request_completion(brief, retry_invalid_json=True)
+        choice = response.choices[0]
+        content = choice.message.content
+
+        if not content or not content.strip():
+            raise ValueError(
+                "Model returned empty content on JSON retry. "
+                f"Finish reason: {choice.finish_reason}"
+            )
+
+        data = _parse_json_object(content)
 
     # Normalize requirement fields before Pydantic validation. Never trust the
     # model's status label; derive it from source evidence and its context.
