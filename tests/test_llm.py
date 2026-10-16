@@ -107,7 +107,10 @@ def test_unknown_fields_get_deterministic_questions_and_risks(monkeypatch):
 
     result = llm.analyze_brief(brief)
 
-    questions = [item.question for item in result.discovery_questions]
+    questions = [
+    item["question"] if isinstance(item, dict) else item.question
+    for item in result.discovery_questions
+]
     assert len(set(questions)) == len(llm.REQUIREMENT_FIELDS)
     assert any("business outcome" in question for question in questions)
     assert any("budget range" in question for question in questions)
