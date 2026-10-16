@@ -1,10 +1,11 @@
-
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app.llm import analyze_brief
+from app.provider_errors import ProviderRateLimitError
+from app.rate_limit import analyze_rate_limiter
 from app.schemas import DiscoveryExtraction
 
 logger = logging.getLogger(__name__)
@@ -34,10 +35,21 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/analyze", response_model=DiscoveryExtraction)
+@app.post(
+    "/analyze",
+    response_model=DiscoveryExtraction,
+    dependencies=[Depends(analyze_rate_limiter.check)],
+)
 def analyze(request: AnalyzeRequest):
     try:
         return analyze_brief(request.brief)
+    except ProviderRateLimitError as exc:
+        logger.warning("Analysis provider rate limit/quota reached")
+        raise HTTPException(
+            status_code=503,
+            detail="The analysis provider is temporarily rate-limiting requests or has reached its quota. Please retry later.",
+            headers={"Retry-After": "30"},
+        ) from exc
     except Exception as exc:
         logger.error("Analysis failed (%s)", type(exc).__name__)
         raise HTTPException(
