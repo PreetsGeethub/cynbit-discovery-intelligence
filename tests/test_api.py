@@ -1,6 +1,7 @@
 import os
 from unittest.mock import patch
 
+import httpx
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
@@ -95,3 +96,20 @@ def test_provider_rate_limit_returns_controlled_503():
     assert response.status_code == 503
     assert response.headers["retry-after"] == "30"
     assert "provider quota details should not leak" not in response.text
+
+
+def test_provider_timeout_returns_controlled_504():
+    from openai import APITimeoutError
+
+    timeout_error = APITimeoutError(request=httpx.Request("POST", "https://example.test"))
+
+    with patch("app.main.analyze_brief", side_effect=timeout_error):
+        response = client.post(
+            "/analyze",
+            json={"brief": "We need an internal support portal."},
+        )
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": "The analysis provider took too long to respond. Please retry."
+    }
