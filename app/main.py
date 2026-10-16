@@ -61,7 +61,7 @@ def analyze(request: AnalyzeRequest):
             headers={"Retry-After": "30"},
         ) from exc
     except Exception as exc:
-        logger.error("Analysis failed (%s)", type(exc).__name__)
+        logger.exception("Analysis failed (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=502,
             detail="Analysis failed. Check server logs.",
