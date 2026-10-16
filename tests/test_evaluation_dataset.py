@@ -20,5 +20,5 @@ def test_evaluation_dataset_has_labeled_cases_for_every_requirement_field():
 
     for case in data["cases"]:
         assert set(case["expected_status"]) == FIELDS
-        assert set(case["expected_status"].values()) <= {"stated", "unknown"}
+        assert set(case["expected_status"].values()) <= {"stated", "tentative", "unknown"}
         assert isinstance(case["brief"], str) and case["brief"].strip()
