@@ -28,7 +28,7 @@ def model_payload(**overrides):
         "project_goal": {
             "value": "Support assistant",
             "evidence": ["We need a support assistant."],
-            "status": "unknown",  # The server must derive status itself.
+            "status": "unknown",  # The server derives status itself.
         },
         "target_users": {
             "value": "Support team",
@@ -141,8 +141,6 @@ def test_specific_questions_suppress_generic_fallbacks(monkeypatch):
         "It will process customer contact details and requires role-based access control."
     )
     payload = model_payload()
-    # Deliberately invalid evidence leaves these fields unknown; specific
-    # model questions should still prevent redundant generic fallback questions.
     payload["integrations"] = {
         "value": "Salesforce and customer database",
         "evidence": ["The CRM is configured with a new API."],
@@ -241,6 +239,73 @@ def test_markdown_json_fence_is_accepted(monkeypatch):
 
     assert result.project_goal.status == "stated"
 
+
+def test_json_object_after_explanatory_text_is_parsed(monkeypatch):
+    brief = "We need a support assistant."
+    payload = model_payload()
+    content = "Let me analyze the brief first.\n\n" + json.dumps(payload)
+
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(payload, content_override=content),
+    )
+
+    result = llm.analyze_brief(brief)
+
+    assert result.project_goal.status == "stated"
+
+
+def test_tentative_vendor_and_estimated_timeline_are_not_confirmed(monkeypatch):
+    brief = (
+        "We need a customer support dashboard for our business. "
+        "We might integrate Salesforce in the future, but the CRM decision is not final. "
+        "We expect to launch in approximately two months. "
+        "Our budget has not been decided yet."
+    )
+    payload = model_payload()
+    payload["project_goal"] = {
+        "value": "Customer support dashboard",
+        "evidence": ["We need a customer support dashboard for our business."],
+        "status": "stated",
+    }
+    payload["integrations"] = {
+        "value": "Salesforce integration",
+        "evidence": ["Salesforce"],
+        "status": "stated",
+    }
+    payload["timeline"] = {
+        "value": "Approximately two months",
+        "evidence": ["approximately two months"],
+        "status": "stated",
+    }
+    payload["budget"] = {
+        "value": "Undecided",
+        "evidence": ["Our budget has not been decided yet."],
+        "status": "stated",
+    }
+
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(payload),
+    )
+
+    result = llm.analyze_brief(brief)
+
+    assert result.project_goal.status == "stated"
+    assert result.integrations.status == "tentative"
+    assert result.integrations.value == "Salesforce integration"
+    assert result.timeline.status == "tentative"
+    assert result.budget.status == "unknown"
+    assert result.budget.value is None
+    assert "budget" in result.missing_information
+    assert any("integration" in item.question.casefold() or "salesforce" in item.question.casefold()
+               for item in result.discovery_questions)
+    assert any("timeline" in item.question.casefold() or "deadline" in item.question.casefold()
+               for item in result.discovery_questions)
+
+
 def test_empty_model_response_is_rejected(monkeypatch):
     monkeypatch.setattr(
         llm.client.chat.completions,
@@ -275,7 +340,9 @@ def test_non_object_model_response_is_rejected(monkeypatch):
     monkeypatch.setattr(
         llm.client.chat.completions,
         "create",
-        lambda **kwargs: fake_response(model_payload(), content_override='["not", "an object"]'),
+        lambda **kwargs: fake_response(
+            model_payload(), content_override='["not", "an object"]'
+        ),
     )
 
     try:
@@ -284,4 +351,3 @@ def test_non_object_model_response_is_rejected(monkeypatch):
         assert "json object" in str(exc).lower()
     else:
         raise AssertionError("Expected a non-object response to raise ValueError")
-
