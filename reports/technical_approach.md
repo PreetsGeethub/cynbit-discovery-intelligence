@@ -107,27 +107,51 @@ The prototype uses a constrained extraction task rather than asking the model to
 
 For a production implementation, consider provider-supported JSON-schema output, bounded retry logic for transient failures, request timeouts, versioned prompts and model identifiers, and logging validation failures without logging confidential briefs. Schema validity is not the same as factual correctness.
 
-## 7. Evaluation Plan
+## 7. Evaluation
 
-Use 15–20 synthetic client briefs covering:
+A repeatable evaluation harness is available in `evals/`.
 
-- Fully specified requirements.
-- Missing fields.
-- Ambiguous wording such as "launch soon".
-- Contradictory statements, such as two launch dates.
-- Evidence quotations absent from the source.
-- Empty or malformed model responses.
-- Minimal briefs with little usable scope.
+### Run the evaluation
 
-Measure:
-- **Field extraction accuracy:** whether values represent the source brief.
-- **Evidence precision:** whether accepted quotations match the source and support the field.
-- **Unknown-field handling:** whether absent requirements remain unknown.
-- **Missing-information recall:** whether genuinely missing categories are identified.
-- **Question usefulness:** reviewer judgment of relevance and actionability.
-- **Failure handling:** whether invalid model output causes controlled behavior.
+After configuring `.env` with `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`, run:
 
-Record dataset size, labeling rules, model identifier, observed results, and representative failures. No evaluation score is claimed until measured.
+```bash
+python -m evals.run_evaluation
+```
+
+The runner calls the configured model for each labeled synthetic brief and writes a timestamped report to `reports/evaluation_results.json`. It can incur provider API usage. To run only the first few cases while iterating:
+
+```bash
+python -m evals.run_evaluation --limit 3
+```
+
+The checked-in dataset currently contains 12 cases covering complete, vague, partial, security-focused, ambiguous, contradictory, and minimal briefs. Expected statuses and selected value checks are manually labeled in `evals/discovery_eval.json`.
+
+### Reported metrics
+
+- **Field-status accuracy:** fraction of evaluated fields whose `stated`/`unknown` status matches the labeled expectation.
+- **Stated-field precision, recall, and F1:** treats `stated` as the positive class.
+- **Evidence source-match rate:** fraction of returned evidence snippets that appear literally in the original brief.
+- **Stated-fields-with-evidence rate:** fraction of fields returned as stated that include at least one evidence snippet.
+- **Labeled value-check rate:** fraction of manually specified expected value tokens found in extracted values.
+- **Missing-information exact-match rate:** fraction of successful cases whose missing-field list exactly matches the list implied by the labeled statuses.
+- **Mean case latency:** average wall-clock time for successful calls.
+
+The runner records case-level outputs, exceptions, questions, risks, and timings to support failure analysis. A failed model call is counted as a failed case and is not silently dropped from the case success/failure totals.
+
+### Interpretation and limitations
+
+No score should be claimed until the runner has actually been executed. Metrics are specific to this synthetic dataset, the selected model/router, and the time of the run. Evidence source-match is a lexical check and does not prove that a quotation semantically supports the extracted value. Value-token checks are lightweight proxies rather than full semantic scoring. Discovery-question usefulness, risk quality, and contradiction handling still require human review. The labeled dataset should be reviewed and expanded as failures are found.
+
+## 7.1. Automated reliability tests
+
+Run the offline suite with:
+
+```bash
+python -m pytest -q
+```
+
+Tests cover requirement normalization, evidence rejection/matching, question fallback deduplication, API input validation, health checks, and controlled API errors. These tests do not call the external model unless the evaluation runner is invoked.
 
 ## 8. Security and Privacy
 
