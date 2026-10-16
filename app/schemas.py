@@ -1,4 +1,3 @@
-
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -7,7 +6,7 @@ from pydantic import BaseModel, Field
 class Requirement(BaseModel):
     value: str | None = None
     evidence: list[str] = Field(default_factory=list)
-    status: Literal["stated", "unknown"] = "unknown"
+    status: Literal["stated", "tentative", "unknown"] = "unknown"
 
 
 class DiscoveryQuestion(BaseModel):
