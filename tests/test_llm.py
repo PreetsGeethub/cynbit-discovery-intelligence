@@ -7,9 +7,8 @@ from types import SimpleNamespace
 os.environ.setdefault("OPENROUTER_API_KEY", "test-key")
 os.environ.setdefault("OPENROUTER_MODEL", "test-model")
 
-import pytest
-
 from app import llm
+from app.schemas import DiscoveryQuestion
 
 
 def fake_response(payload, content_override=None):
@@ -31,11 +30,27 @@ def model_payload(**overrides):
             "evidence": ["We need a support assistant."],
             "status": "unknown",  # The server must derive status itself.
         },
-        "target_users": {"value": "Support team", "evidence": ["Support team"], "status": "stated"},
-        "integrations": {"value": "CRM", "evidence": ["CRM"], "status": "stated"},
-        "timeline": {"value": "Four weeks", "evidence": ["four weeks"], "status": "stated"},
+        "target_users": {
+            "value": "Support team",
+            "evidence": ["Support team"],
+            "status": "stated",
+        },
+        "integrations": {
+            "value": "CRM",
+            "evidence": ["CRM"],
+            "status": "stated",
+        },
+        "timeline": {
+            "value": "Four weeks",
+            "evidence": ["four weeks"],
+            "status": "stated",
+        },
         "budget": {"value": None, "evidence": [], "status": "unknown"},
-        "security_requirements": {"value": None, "evidence": [], "status": "unknown"},
+        "security_requirements": {
+            "value": None,
+            "evidence": [],
+            "status": "unknown",
+        },
         "missing_information": [],
         "potential_risks": [],
         "discovery_questions": [],
@@ -45,7 +60,10 @@ def model_payload(**overrides):
 
 
 def test_valid_exact_evidence_is_marked_stated(monkeypatch):
-    brief = "We need a support assistant. Support team will use it; CRM integration; launch in four weeks."
+    brief = (
+        "We need a support assistant. Support team will use it; "
+        "CRM integration; launch in four weeks."
+    )
     payload = model_payload()
     payload["target_users"]["evidence"] = ["Support team"]
     payload["integrations"]["evidence"] = ["CRM"]
@@ -87,10 +105,97 @@ def test_unsupported_evidence_is_rejected_and_requirement_becomes_unknown(monkey
     assert "project goal" in result.missing_information
 
 
+def test_evidence_matching_allows_whitespace_variation_and_returns_source_quote(monkeypatch):
+    brief = (
+        "We need a customer support portal.\n"
+        "It must integrate with Salesforce and our existing customer database."
+    )
+    payload = model_payload()
+    payload["project_goal"]["evidence"] = ["We need a customer support portal."]
+    payload["integrations"] = {
+        "value": "Salesforce and existing customer database",
+        "evidence": [
+            "It must integrate with   Salesforce and our existing customer database."
+        ],
+        "status": "unknown",
+    }
+
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(payload),
+    )
+
+    result = llm.analyze_brief(brief)
+
+    assert result.integrations.status == "stated"
+    assert result.integrations.evidence == [
+        "It must integrate with Salesforce and our existing customer database."
+    ]
+
+
+def test_specific_questions_suppress_generic_fallbacks(monkeypatch):
+    brief = (
+        "We need a customer support portal for 50 internal support agents. "
+        "It must integrate with Salesforce and our existing customer database. "
+        "It will process customer contact details and requires role-based access control."
+    )
+    payload = model_payload()
+    # Deliberately invalid evidence leaves these fields unknown; specific
+    # model questions should still prevent redundant generic fallback questions.
+    payload["integrations"] = {
+        "value": "Salesforce and customer database",
+        "evidence": ["The CRM is configured with a new API."],
+        "status": "stated",
+    }
+    payload["security_requirements"] = {
+        "value": "Role-based access control",
+        "evidence": ["All data is encrypted at rest."],
+        "status": "stated",
+    }
+    payload["discovery_questions"] = [
+        {
+            "question": "What Salesforce objects and data need to be integrated?",
+            "priority": "high",
+        },
+        {
+            "question": "What roles and permissions are needed for role-based access control?",
+            "priority": "high",
+        },
+        {
+            "question": "Are there compliance requirements for customer contact details?",
+            "priority": "high",
+        },
+    ]
+
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(payload),
+    )
+
+    result = llm.analyze_brief(brief)
+    questions = [item.question for item in result.discovery_questions]
+
+    assert not any(
+        question == "Which systems must the solution integrate with?"
+        for question in questions
+    )
+    assert not any(
+        question == "What security, privacy, or compliance requirements apply?"
+        for question in questions
+    )
+    assert all(isinstance(item, DiscoveryQuestion) for item in result.discovery_questions)
+
+
 def test_unknown_fields_get_deterministic_questions_and_risks(monkeypatch):
     brief = "We are exploring an internal tool."
     payload = {
-        field: {"value": "invented", "evidence": ["not in brief"], "status": "stated"}
+        field: {
+            "value": "invented",
+            "evidence": ["not in brief"],
+            "status": "stated",
+        }
         for field in llm.REQUIREMENT_FIELDS
     }
     payload.update({
@@ -107,15 +212,18 @@ def test_unknown_fields_get_deterministic_questions_and_risks(monkeypatch):
 
     result = llm.analyze_brief(brief)
 
-    questions = [
-    item["question"] if isinstance(item, dict) else item.question
-    for item in result.discovery_questions
-]
+    questions = [item.question for item in result.discovery_questions]
     assert len(set(questions)) == len(llm.REQUIREMENT_FIELDS)
     assert any("business outcome" in question for question in questions)
     assert any("budget range" in question for question in questions)
-    assert any("Integration scope is unclear" in risk for risk in result.potential_risks)
-    assert any("timeline is unspecified" in risk for risk in result.potential_risks)
+    assert any(
+        "Integration scope is unclear" in risk
+        for risk in result.potential_risks
+    )
+    assert any(
+        "timeline is unspecified" in risk
+        for risk in result.potential_risks
+    )
 
 
 def test_markdown_json_fence_is_accepted(monkeypatch):
