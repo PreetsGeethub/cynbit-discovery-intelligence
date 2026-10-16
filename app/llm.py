@@ -37,7 +37,7 @@ REQUIREMENT_FIELDS = (
 
 TENTATIVE_PATTERNS = (
     r"\bmight\b",
-    r"\bmay\b",
+    r"\bmay\s+(?:be|integrate|use|require|need|include|connect|support|launch|consider|change|become|adopt|choose|select)\b",
     r"\bcould\b",
     r"\bpossibly\b",
     r"\bpotentially\b",
@@ -60,7 +60,7 @@ TENTATIVE_PATTERNS = (
 )
 
 BUDGET_NOT_SET_PATTERNS = (
-    r"\bbudget\b.{0,35}\bnot (?:yet )?(?:been )?(?:decided|set|established|approved)\b",
+    r"\bbudget\b.{0,35}\bnot (?:yet )?(?:been )?(?:decided|set|established)\b",
     r"\bbudget\b.{0,20}\bundecided\b",
     r"\bno budget\b",
     r"\bbudget is unknown\b",
