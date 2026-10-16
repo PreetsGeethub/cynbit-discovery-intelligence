@@ -88,12 +88,15 @@ def _source_context(quote: str, brief: str) -> str:
         brief.rfind(mark, 0, match.start()) for mark in (".", "!", "?", "\n")
     ]
     start = max(start_candidates) + 1
-    end_candidates = [
-        position
-        for mark in (".", "!", "?", "\n")
-        if (position := brief.find(mark, match.end())) != -1
-    ]
-    end = min(end_candidates) + 1 if end_candidates else len(brief)
+    if match.end() > match.start() and brief[match.end() - 1] in ".!?":
+        end = match.end()
+    else:
+        end_candidates = [
+            position
+            for mark in (".", "!", "?", "\n")
+            if (position := brief.find(mark, match.end())) != -1
+        ]
+        end = min(end_candidates) + 1 if end_candidates else len(brief)
     return brief[start:end].strip()
 
 
