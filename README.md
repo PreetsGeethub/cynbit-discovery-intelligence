@@ -4,6 +4,23 @@ An AI-assisted project discovery proof of concept that turns a client brief into
 
 > Assessment prototype only. Outputs require human review. Do not submit confidential client information to the public demo.
 
+## Live Demo
+
+- **Streamlit dashboard:** https://cynbit-discovery-intelligence.streamlit.app/
+- **FastAPI backend:** https://cynbit-discovery-intelligence.onrender.com
+- **API health check:** https://cynbit-discovery-intelligence.onrender.com/health
+- **Interactive API docs:** https://cynbit-discovery-intelligence.onrender.com/docs
+
+The app is deployed on free hosting and uses OpenRouter's free model router (`openrouter/free`). Initial requests may be slower while a service wakes up, and model availability/output quality can vary. The backend retries once with stricter instructions if a model response is not valid JSON.
+
+## Example Brief
+
+Try this synthetic brief in the live dashboard:
+
+> We need an AI support assistant connected to our CRM. It should launch in four weeks. Our support team will use it. We have not selected a CRM vendor or established a budget.
+
+Review the output carefully; the prototype is designed to surface evidence and unknowns, not to replace human judgment.
+
 ## What it does
 
 - Accepts a text brief through a FastAPI endpoint.
@@ -24,6 +41,17 @@ Streamlit UI -> FastAPI /analyze -> OpenRouter LLM
                                   -> evidence checks
                                   -> Pydantic validation
                                   -> deterministic fallbacks
+                                  -> structured discovery report
+```
+
+## Architecture
+
+```text
+Streamlit UI -> FastAPI /analyze -> OpenRouter LLM
+                                  -> JSON parsing and one retry on invalid output
+                                  -> evidence checks
+                                  -> Pydantic validation
+                                  -> deterministic missing-field, question and risk logic
                                   -> structured discovery report
 ```
 
@@ -90,7 +118,7 @@ Open a second terminal, activate the same virtual environment, then run:
 streamlit run ui/streamlit_app.py
 ```
 
-The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. To change the API address, set `API_URL` before starting Streamlit; to change the wait limit, set `API_REQUEST_TIMEOUT_SECONDS` in the Streamlit process environment.
+The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. The deployed dashboard points to the hosted FastAPI backend. To change the API address, set `API_URL` before starting Streamlit; to change the wait limit, set `API_REQUEST_TIMEOUT_SECONDS` in the Streamlit process environment.
 
 ## API example
 
