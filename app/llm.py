@@ -84,8 +84,11 @@ def _source_context(quote: str, brief: str) -> str:
     if not match:
         return quote
 
+    # Use the nearest clause boundary as context so uncertainty about one
+    # requirement does not automatically make every fact in the sentence tentative.
+    separators = (".", "!", "?", ",", ";", "\n")
     start_candidates = [
-        brief.rfind(mark, 0, match.start()) for mark in (".", "!", "?", "\n")
+        brief.rfind(mark, 0, match.start()) for mark in separators
     ]
     start = max(start_candidates) + 1
     if match.end() > match.start() and brief[match.end() - 1] in ".!?":
@@ -93,7 +96,7 @@ def _source_context(quote: str, brief: str) -> str:
     else:
         end_candidates = [
             position
-            for mark in (".", "!", "?", "\n")
+            for mark in separators
             if (position := brief.find(mark, match.end())) != -1
         ]
         end = min(end_candidates) + 1 if end_candidates else len(brief)
