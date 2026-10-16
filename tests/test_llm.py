@@ -240,3 +240,48 @@ def test_markdown_json_fence_is_accepted(monkeypatch):
     result = llm.analyze_brief(brief)
 
     assert result.project_goal.status == "stated"
+
+def test_empty_model_response_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(model_payload(), content_override=""),
+    )
+
+    try:
+        llm.analyze_brief("We need a support assistant for our team.")
+    except ValueError as exc:
+        assert "empty content" in str(exc).lower()
+    else:
+        raise AssertionError("Expected empty model output to raise ValueError")
+
+
+def test_malformed_json_response_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(model_payload(), content_override="{not json"),
+    )
+
+    try:
+        llm.analyze_brief("We need a support assistant for our team.")
+    except ValueError as exc:
+        assert "invalid json" in str(exc).lower()
+    else:
+        raise AssertionError("Expected malformed JSON to raise ValueError")
+
+
+def test_non_object_model_response_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: fake_response(model_payload(), content_override='["not", "an object"]'),
+    )
+
+    try:
+        llm.analyze_brief("We need a support assistant for our team.")
+    except ValueError as exc:
+        assert "json object" in str(exc).lower()
+    else:
+        raise AssertionError("Expected a non-object response to raise ValueError")
+
