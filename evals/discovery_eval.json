@@ -316,6 +316,30 @@
         ]
       },
       "notes": "Integrations are stated as no confirmed integration; value should not invent a vendor."
+    },
+    {
+      "id": "tentative_vendor_and_estimated_timeline",
+      "brief": "We need a customer support dashboard for our business. We might integrate Salesforce in the future, but the CRM decision is not final. We expect to launch in approximately two months. Our budget has not been decided yet.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "unknown",
+        "integrations": "tentative",
+        "timeline": "tentative",
+        "budget": "unknown",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "customer support dashboard"
+        ],
+        "integrations": [
+          "Salesforce"
+        ],
+        "timeline": [
+          "two months"
+        ]
+      },
+      "notes": "A potential vendor and approximate timeline must not be upgraded to confirmed commitments; undecided budget remains unknown."
     }
   ]
 }
