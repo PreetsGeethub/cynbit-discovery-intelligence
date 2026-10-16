@@ -321,6 +321,27 @@ def test_empty_model_response_is_rejected(monkeypatch):
         raise AssertionError("Expected empty model output to raise ValueError")
 
 
+def test_invalid_json_response_retries_once_then_succeeds(monkeypatch):
+    brief = "We need a support assistant for our team."
+    payload = model_payload()
+    responses = iter(
+        [
+            fake_response(payload, content_override="User Safety: safe"),
+            fake_response(payload),
+        ]
+    )
+
+    monkeypatch.setattr(
+        llm.client.chat.completions,
+        "create",
+        lambda **kwargs: next(responses),
+    )
+
+    result = llm.analyze_brief(brief)
+
+    assert result.project_goal.status == "stated"
+
+
 def test_malformed_json_response_is_rejected(monkeypatch):
     monkeypatch.setattr(
         llm.client.chat.completions,
