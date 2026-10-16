@@ -1,9 +1,9 @@
-services:
+﻿services:
   - type: web
     name: cynbit-discovery-api
     runtime: python
     plan: free
-    branch: fix/evidence-and-question-deduplication
+    branch: main
     buildCommand: pip install -r requirements-api.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -18,3 +18,19 @@ services:
         value: "5"
       - key: ANALYZE_RATE_LIMIT_WINDOW_SECONDS
         value: "60"
+
+  - type: web
+    name: cynbit-discovery-dashboard
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run ui/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+    envVars:
+      - key: API_URL
+        fromService:
+          name: cynbit-discovery-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: API_REQUEST_TIMEOUT_SECONDS
+        value: "180"
