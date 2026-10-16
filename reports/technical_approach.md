@@ -15,7 +15,7 @@ Design goals:
 4. Mark fields unknown when evidence is absent or invalid.
 5. Validate model output against a typed schema.
 6. Generate follow-up questions for missing information.
-7. Handle invalid model responses through controlled errors.
+7. Handle invalid model responses through controlled errors.\n8. Limit repeated API requests and handle upstream provider throttling safely.
 8. Keep model configuration and credentials outside source control.
 
 ## 2. Architecture
@@ -99,7 +99,7 @@ For missing fields, application logic supplies standard questions about business
 If relevant fields are unknown, deterministic checks can flag unclear integration scope, an unspecified timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
 
 ### Step 9: Return the result
-The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback.
+The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback. The analysis endpoint also applies a configurable, process-local per-IP sliding-window limit (default 5 requests per 60 seconds), returning HTTP 429 and a `Retry-After` header. Upstream OpenRouter rate-limit/quota errors are mapped to a generic HTTP 503 with a retry hint; provider-specific details are not exposed.
 
 ## 6. Prompt Engineering and Reliability
 
@@ -162,7 +162,7 @@ This is an assessment demonstration, not a production-approved system.
 - Use synthetic briefs in the public demo.
 - Avoid logging full briefs or credentials.
 - Review provider data handling and retention terms before sending real client information.
-- Add authentication and rate limits before exposing the service publicly.
+- Add authentication and shared-store rate limits before exposing the service publicly; the current in-memory limiter is intended for a single process only.
 - Require human approval before a discovery summary becomes a client commitment.
 
 A successful endpoint response does not establish production readiness. Authentication, access control, observability, deployment hardening, and data policies need separate work.
