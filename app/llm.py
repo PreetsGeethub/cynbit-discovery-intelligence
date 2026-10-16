@@ -42,7 +42,7 @@ def _find_evidence_quote(quote: str, brief: str) -> str | None:
 
     # Match each run of whitespace flexibly, but keep words and punctuation
     # intact. Return the actual substring from the brief as the evidence.
-    pattern = r"\\s+".join(re.escape(part) for part in quote.strip().split())
+    pattern = r"\s+".join(re.escape(part) for part in quote.strip().split())
     match = re.search(pattern, brief, flags=re.IGNORECASE)
     return match.group(0) if match else None
 
