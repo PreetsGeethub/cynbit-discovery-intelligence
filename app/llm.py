@@ -221,7 +221,8 @@ Extraction procedure:
 3. For each field, collect directly relevant information and provide a concise value
    that preserves important qualifiers and uncertainty.
 4. For every non-null value, provide one or more exact source excerpts in evidence.
-   Copy excerpts from the brief; do not paraphrase or invent quotations.
+   Copy the shortest excerpt that directly supports that field; do not paraphrase or
+   invent quotations. Avoid including unrelated requirements in the same excerpt.
 5. Use "stated" for explicit, firm requirements. Use "tentative" when the brief
    describes an option, vendor, estimate, intention, or requirement as uncertain,
    proposed, approximate, or not finalized. Never upgrade a possibility into a
