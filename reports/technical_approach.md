@@ -15,8 +15,9 @@ Design goals:
 4. Mark fields unknown when evidence is absent or invalid.
 5. Validate model output against a typed schema.
 6. Generate follow-up questions for missing information.
-7. Handle invalid model responses through controlled errors.\n8. Limit repeated API requests and handle upstream provider throttling safely.
-8. Keep model configuration and credentials outside source control.
+7. Handle invalid model responses through controlled errors.
+8. Limit repeated API requests and handle upstream provider throttling safely.
+9. Keep model configuration and credentials outside source control.
 
 ## 2. Architecture
 
