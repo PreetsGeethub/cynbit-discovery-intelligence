@@ -62,7 +62,7 @@ Streamlit UI -> FastAPI /analyze -> OpenRouter LLM
    LLM_TIMEOUT_SECONDS=60
    ```
 
-   The free model router may select different models over time; output quality and availability can vary.
+   The free model router may select different models over time; output quality and availability can vary.\n\n   Optional API rate-limit settings (defaults: 5 analysis requests per client IP per 60 seconds):\n\n   ```dotenv\n   ANALYZE_RATE_LIMIT_REQUESTS=5\n   ANALYZE_RATE_LIMIT_WINDOW_SECONDS=60\n   ```
 
 ## Run the API
 
