@@ -1,9 +1,13 @@
 
+import logging
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app.llm import analyze_brief
 from app.schemas import DiscoveryExtraction
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Cynbit Discovery Intelligence",
@@ -35,7 +39,7 @@ def analyze(request: AnalyzeRequest):
     try:
         return analyze_brief(request.brief)
     except Exception as exc:
-        print(f"Analysis failed: {type(exc).__name__}: {exc}")
+        logger.error("Analysis failed (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=502,
             detail="Analysis failed. Check server logs.",
