@@ -8,13 +8,13 @@ An AI-assisted project discovery proof of concept that turns a client brief into
 
 - Accepts a text brief through a FastAPI endpoint.
 - Uses an OpenRouter-compatible chat completion model to propose structured requirements.
-- Checks whether evidence snippets appear verbatim in the source brief.
+- Requests JSON-mode output where supported, parses a valid object if a model prepends explanatory text, and checks evidence against the source brief.
 - Validates the response with Pydantic.
-- Marks fields as unknown when usable evidence is missing.
+- Distinguishes confirmed (`stated`), provisional (`tentative`), and missing (`unknown`) requirements.
 - Adds deterministic follow-up questions and basic risk flags.
 - Displays the result in a Streamlit dashboard and allows JSON download.
 
-Evidence matching is a useful guardrail, not proof that a quote semantically supports an interpretation. The prototype is not production-ready and does not claim measured business impact.
+Evidence matching is a useful guardrail, not proof that a quote semantically supports an interpretation. Tentative language such as “might,” “approximately,” and “not final” is treated as provisional rather than confirmed. The prototype is not production-ready and does not claim measured business impact.
 
 ## Architecture
 
@@ -90,7 +90,7 @@ Open a second terminal, activate the same virtual environment, then run:
 streamlit run ui/streamlit_app.py
 ```
 
-The dashboard defaults to `http://127.0.0.1:8000` for the API. To change it, set `API_URL` before starting Streamlit.
+The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. To change the API address, set `API_URL` before starting Streamlit.
 
 ## API example
 
