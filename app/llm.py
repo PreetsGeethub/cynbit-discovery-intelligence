@@ -46,7 +46,7 @@ TENTATIVE_PATTERNS = (
     r"\bundecided\b",
     r"\bapproximately\b",
     r"\bapprox\.?\b",
-    r"\baround\b",
+    r"\baround\s+(?:\d|one|two|three|four|five|six|seven|eight|nine|ten|a few|a couple|a dozen)\b",
     r"\broughly\b",
     r"\bestimated?\b",
     r"\bestimate\b",
