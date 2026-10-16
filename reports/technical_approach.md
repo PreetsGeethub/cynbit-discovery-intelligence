@@ -93,10 +93,10 @@ The normalized response is passed through Pydantic. The schema constrains status
 The application recomputes missing information from the final requirement statuses. It does not rely on the model's own missing-field list.
 
 ### Step 7: Deterministic follow-up questions
-For missing fields, application logic supplies standard questions about business outcome, users, integrations, launch date, budget, and security/privacy requirements. Existing questions are checked to reduce duplicates.
+For unknown fields, application logic supplies standard questions about business outcome, users, integrations, launch date, budget, and security/privacy requirements. Tentative fields receive clarification questions about whether the option or estimate is confirmed. Existing questions are checked to reduce duplicates.
 
 ### Step 8: Basic risk flags
-If relevant fields are unknown, deterministic checks can flag unclear integration scope, an unspecified timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
+If relevant fields are unknown or tentative, deterministic checks can flag unclear or unconfirmed integration scope, an unspecified or estimated timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
 
 ### Step 9: Return the result
 The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback. The analysis endpoint also applies a configurable, process-local per-IP sliding-window limit (default 5 requests per 60 seconds), returning HTTP 429 and a `Retry-After` header. Upstream OpenRouter rate-limit/quota errors (including HTTP 402/429) are mapped to a generic HTTP 503 with a retry hint; provider-specific details are not exposed. Provider timeouts return HTTP 504, and the dashboard distinguishes timeout, connection, and API errors. The dashboard's default request timeout is longer than the configured model timeout to account for slower model responses.
