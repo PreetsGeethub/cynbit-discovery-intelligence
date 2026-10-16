@@ -8,13 +8,13 @@ An AI-assisted project discovery proof of concept that turns a client brief into
 
 - Accepts a text brief through a FastAPI endpoint.
 - Uses an OpenRouter-compatible chat completion model to propose structured requirements.
-- Checks whether evidence snippets appear verbatim in the source brief.
+- Requests JSON-mode output where supported, parses a valid object if a model prepends explanatory text, and checks evidence against the source brief.
 - Validates the response with Pydantic.
-- Marks fields as unknown when usable evidence is missing.
+- Distinguishes confirmed (`stated`), provisional (`tentative`), and missing (`unknown`) requirements.
 - Adds deterministic follow-up questions and basic risk flags.
 - Displays the result in a Streamlit dashboard and allows JSON download.
 
-Evidence matching is a useful guardrail, not proof that a quote semantically supports an interpretation. The prototype is not production-ready and does not claim measured business impact.
+Evidence matching is a useful guardrail, not proof that a quote semantically supports an interpretation. Tentative language such as “might,” “approximately,” and “not final” is treated as provisional rather than confirmed. The prototype is not production-ready and does not claim measured business impact.
 
 ## Architecture
 
@@ -62,7 +62,14 @@ Streamlit UI -> FastAPI /analyze -> OpenRouter LLM
    LLM_TIMEOUT_SECONDS=60
    ```
 
-   The free model router may select different models over time; output quality and availability can vary.
+   The free model router may select different models over time; output quality and availability can vary. 
+
+   Optional API rate-limit settings (defaults: 5 analysis requests per client IP per 60 seconds): 
+
+   ```dotenv 
+   ANALYZE_RATE_LIMIT_REQUESTS=5 
+   ANALYZE_RATE_LIMIT_WINDOW_SECONDS=60 
+   ```
 
 ## Run the API
 
@@ -83,7 +90,7 @@ Open a second terminal, activate the same virtual environment, then run:
 streamlit run ui/streamlit_app.py
 ```
 
-The dashboard defaults to `http://127.0.0.1:8000` for the API. To change it, set `API_URL` before starting Streamlit.
+The dashboard defaults to `http://127.0.0.1:8000` for the API and waits up to 180 seconds for a response, which can be useful with slower hosted models. To change the API address, set `API_URL` before starting Streamlit; to change the wait limit, set `API_REQUEST_TIMEOUT_SECONDS` in the Streamlit process environment.
 
 ## API example
 
@@ -97,15 +104,27 @@ The dashboard defaults to `http://127.0.0.1:8000` for the API. To change it, set
 
 The response includes `project_goal`, `target_users`, `integrations`, `timeline`, `budget`, `security_requirements`, `missing_information`, `potential_risks`, and `discovery_questions`.
 
-## Tests
+## Tests and evaluation
 
-Run the local test suite:
+Run the offline test suite:
 
 ```powershell
 python -m pytest -q
 ```
 
-Tests should not require a live model call unless explicitly written to do so. Evaluation results should be reported only after they have actually been measured.
+Run the labeled evaluation suite (this calls the configured model and may incur API usage):
+
+```powershell
+python -m evals.run_evaluation
+```
+
+For a quick smoke run, evaluate only the first three cases:
+
+```powershell
+python -m evals.run_evaluation --limit 3
+```
+
+The evaluation dataset is in `evals/discovery_eval.json`. A timestamped, case-level report is written to `reports/evaluation_results.json`. It includes field-status accuracy, stated-field precision/recall/F1, literal evidence source-match rate, labeled value checks, missing-information exact-match rate, and latency. These are dataset-specific measurements, not a general guarantee of correctness. Review the report's limitations before quoting any score. Do not commit API keys or real client briefs.
 
 ## Reports
 

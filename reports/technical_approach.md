@@ -16,7 +16,8 @@ Design goals:
 5. Validate model output against a typed schema.
 6. Generate follow-up questions for missing information.
 7. Handle invalid model responses through controlled errors.
-8. Keep model configuration and credentials outside source control.
+8. Limit repeated API requests and handle upstream provider throttling safely.
+9. Keep model configuration and credentials outside source control.
 
 ## 2. Architecture
 
@@ -66,7 +67,7 @@ The API accepts a brief as text, with minimum and maximum length constraints. Th
 Each requirement contains:
 - `value`: extracted value, or null when unknown.
 - `evidence`: supporting text snippets from the source brief.
-- `status`: `stated` or `unknown`.
+- `status`: `stated` for confirmed information, `tentative` for provisional or uncertain information, or `unknown` when no supported value is available.
 
 The response also includes `missing_information`, `potential_risks`, and `discovery_questions`.
 
@@ -76,13 +77,13 @@ The response also includes `missing_information`, `potential_risks`, and `discov
 FastAPI validates the request body before analysis. Briefs outside the permitted length limits should fail validation before reaching the model.
 
 ### Step 2: Structured model request
-The prompt asks the model to return JSON, use only facts supported by the brief, include exact quotations, leave absent information unknown, and avoid inventing vendors, budgets, or deadlines. Prompt instructions improve behavior but are not a correctness boundary.
+The prompt asks the model to return JSON, use only facts supported by the brief, include source quotations, preserve uncertainty, leave absent information unknown, and avoid inventing vendors, budgets, or deadlines. JSON mode is requested when supported; compatibility errors fall back to the prompt-only contract. Prompt instructions improve behavior but are not a correctness boundary.
 
 ### Step 3: JSON parsing
-The analysis layer rejects empty output, strips optional Markdown fences, and parses JSON. Malformed JSON or an unexpected top-level structure raises an error.
+The analysis layer rejects empty output, strips optional Markdown fences, and parses JSON. If explanatory text appears before an otherwise valid JSON object, it extracts the object and continues through the same schema and evidence checks. Malformed JSON or an unexpected top-level structure raises a controlled error.
 
 ### Step 4: Evidence verification
-For each requirement, the application checks whether an evidence snippet is a non-empty string appearing verbatim in the original brief. A field is marked `stated` only if a non-empty value and at least one matching evidence snippet exist. Otherwise, the value becomes null, evidence is cleared, and status becomes `unknown`.
+For each requirement, the application checks whether an evidence snippet is a non-empty string appearing verbatim in the original brief. A field is marked `stated` only if a non-empty value and matching evidence exist without clear uncertainty cues. Qualifiers such as “might,” “approximately,” or “not final” cause supported values to be marked `tentative`. An explicitly undecided budget remains `unknown`. If usable evidence is absent, the value becomes null, evidence is cleared, and status becomes `unknown`.
 
 This prevents unsupported quotations from being accepted as evidence. It does not prove that a matching quote semantically supports the extracted value; a stronger implementation could track source offsets and add human-reviewed semantic-support tests.
 
@@ -93,13 +94,13 @@ The normalized response is passed through Pydantic. The schema constrains status
 The application recomputes missing information from the final requirement statuses. It does not rely on the model's own missing-field list.
 
 ### Step 7: Deterministic follow-up questions
-For missing fields, application logic supplies standard questions about business outcome, users, integrations, launch date, budget, and security/privacy requirements. Existing questions are checked to reduce duplicates.
+For unknown fields, application logic supplies standard questions about business outcome, users, integrations, launch date, budget, and security/privacy requirements. Tentative fields receive clarification questions about whether the option or estimate is confirmed. Existing questions are checked to reduce duplicates.
 
 ### Step 8: Basic risk flags
-If relevant fields are unknown, deterministic checks can flag unclear integration scope, an unspecified timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
+If relevant fields are unknown or tentative, deterministic checks can flag unclear or unconfirmed integration scope, an unspecified or estimated timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
 
 ### Step 9: Return the result
-The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback.
+The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback. The analysis endpoint also applies a configurable, process-local per-IP sliding-window limit (default 5 requests per 60 seconds), returning HTTP 429 and a `Retry-After` header. Upstream OpenRouter rate-limit/quota errors (including HTTP 402/429) are mapped to a generic HTTP 503 with a retry hint; provider-specific details are not exposed. Provider timeouts return HTTP 504, and the dashboard distinguishes timeout, connection, and API errors. The dashboard's default request timeout is longer than the configured model timeout to account for slower model responses.
 
 ## 6. Prompt Engineering and Reliability
 
@@ -107,27 +108,51 @@ The prototype uses a constrained extraction task rather than asking the model to
 
 For a production implementation, consider provider-supported JSON-schema output, bounded retry logic for transient failures, request timeouts, versioned prompts and model identifiers, and logging validation failures without logging confidential briefs. Schema validity is not the same as factual correctness.
 
-## 7. Evaluation Plan
+## 7. Evaluation
 
-Use 15–20 synthetic client briefs covering:
+A repeatable evaluation harness is available in `evals/`.
 
-- Fully specified requirements.
-- Missing fields.
-- Ambiguous wording such as "launch soon".
-- Contradictory statements, such as two launch dates.
-- Evidence quotations absent from the source.
-- Empty or malformed model responses.
-- Minimal briefs with little usable scope.
+### Run the evaluation
 
-Measure:
-- **Field extraction accuracy:** whether values represent the source brief.
-- **Evidence precision:** whether accepted quotations match the source and support the field.
-- **Unknown-field handling:** whether absent requirements remain unknown.
-- **Missing-information recall:** whether genuinely missing categories are identified.
-- **Question usefulness:** reviewer judgment of relevance and actionability.
-- **Failure handling:** whether invalid model output causes controlled behavior.
+After configuring `.env` with `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`, run:
 
-Record dataset size, labeling rules, model identifier, observed results, and representative failures. No evaluation score is claimed until measured.
+```bash
+python -m evals.run_evaluation
+```
+
+The runner calls the configured model for each labeled synthetic brief and writes a timestamped report to `reports/evaluation_results.json`. It can incur provider API usage. To run only the first few cases while iterating:
+
+```bash
+python -m evals.run_evaluation --limit 3
+```
+
+The checked-in dataset currently contains 12 cases covering complete, vague, partial, security-focused, ambiguous, contradictory, and minimal briefs. Expected statuses and selected value checks are manually labeled in `evals/discovery_eval.json`.
+
+### Reported metrics
+
+- **Field-status accuracy:** fraction of evaluated fields whose `stated`/`unknown` status matches the labeled expectation.
+- **Stated-field precision, recall, and F1:** treats `stated` as the positive class.
+- **Evidence source-match rate:** fraction of returned evidence snippets that appear literally in the original brief.
+- **Stated-fields-with-evidence rate:** fraction of fields returned as stated that include at least one evidence snippet.
+- **Labeled value-check rate:** fraction of manually specified expected value tokens found in extracted values.
+- **Missing-information exact-match rate:** fraction of successful cases whose missing-field list exactly matches the list implied by the labeled statuses.
+- **Mean case latency:** average wall-clock time for successful calls.
+
+The runner records case-level outputs, exceptions, questions, risks, and timings to support failure analysis. A failed model call is counted as a failed case and is not silently dropped from the case success/failure totals.
+
+### Interpretation and limitations
+
+No score should be claimed until the runner has actually been executed. Metrics are specific to this synthetic dataset, the selected model/router, and the time of the run. Evidence source-match is a lexical check and does not prove that a quotation semantically supports the extracted value. Value-token checks are lightweight proxies rather than full semantic scoring. Discovery-question usefulness, risk quality, and contradiction handling still require human review. The labeled dataset should be reviewed and expanded as failures are found.
+
+## 7.1. Automated reliability tests
+
+Run the offline suite with:
+
+```bash
+python -m pytest -q
+```
+
+Tests cover requirement normalization, evidence rejection/matching, question fallback deduplication, API input validation, health checks, and controlled API errors. These tests do not call the external model unless the evaluation runner is invoked.
 
 ## 8. Security and Privacy
 
@@ -138,7 +163,7 @@ This is an assessment demonstration, not a production-approved system.
 - Use synthetic briefs in the public demo.
 - Avoid logging full briefs or credentials.
 - Review provider data handling and retention terms before sending real client information.
-- Add authentication and rate limits before exposing the service publicly.
+- Add authentication and shared-store rate limits before exposing the service publicly; the current in-memory limiter is intended for a single process only.
 - Require human approval before a discovery summary becomes a client commitment.
 
 A successful endpoint response does not establish production readiness. Authentication, access control, observability, deployment hardening, and data policies need separate work.
