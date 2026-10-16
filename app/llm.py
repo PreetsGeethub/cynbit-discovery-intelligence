@@ -52,7 +52,7 @@ TENTATIVE_PATTERNS = (
     r"\bestimate\b",
     r"\bexpect(?:ed)? to\b",
     r"\baim(?:ing)? to\b",
-    r"\btarget(?:ing)?\b",
+    r"\btarget(?:ing)?\s+(?:launch|date|deadline|release|delivery|timeline)\b",
     r"\btentative\b",
     r"\bproposed\b",
     r"\bsubject to\b",
