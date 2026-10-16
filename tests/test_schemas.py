@@ -47,3 +47,41 @@ def test_valid_discovery_extraction():
     assert result.budget.status == "unknown"
     assert isinstance(result.missing_information, list)
     assert isinstance(result.potential_risks, list)
+
+
+def test_tentative_requirement_status_is_supported():
+    result = DiscoveryExtraction.model_validate({
+        "project_goal": {
+            "value": "Customer support dashboard",
+            "evidence": ["We need a customer support dashboard."],
+            "status": "stated",
+        },
+        "target_users": {
+            "value": None,
+            "evidence": [],
+            "status": "unknown",
+        },
+        "integrations": {
+            "value": "Potential Salesforce integration",
+            "evidence": ["We might integrate Salesforce."],
+            "status": "tentative",
+        },
+        "timeline": {
+            "value": "Approximately two months",
+            "evidence": ["approximately two months"],
+            "status": "tentative",
+        },
+        "budget": {
+            "value": None,
+            "evidence": [],
+            "status": "unknown",
+        },
+        "security_requirements": {
+            "value": None,
+            "evidence": [],
+            "status": "unknown",
+        },
+    })
+
+    assert result.integrations.status == "tentative"
+    assert result.timeline.status == "tentative"
