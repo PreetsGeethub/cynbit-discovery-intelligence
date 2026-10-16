@@ -66,7 +66,7 @@ The API accepts a brief as text, with minimum and maximum length constraints. Th
 Each requirement contains:
 - `value`: extracted value, or null when unknown.
 - `evidence`: supporting text snippets from the source brief.
-- `status`: `stated` or `unknown`.
+- `status`: `stated` for confirmed information, `tentative` for provisional or uncertain information, or `unknown` when no supported value is available.
 
 The response also includes `missing_information`, `potential_risks`, and `discovery_questions`.
 
@@ -76,13 +76,13 @@ The response also includes `missing_information`, `potential_risks`, and `discov
 FastAPI validates the request body before analysis. Briefs outside the permitted length limits should fail validation before reaching the model.
 
 ### Step 2: Structured model request
-The prompt asks the model to return JSON, use only facts supported by the brief, include exact quotations, leave absent information unknown, and avoid inventing vendors, budgets, or deadlines. Prompt instructions improve behavior but are not a correctness boundary.
+The prompt asks the model to return JSON, use only facts supported by the brief, include source quotations, preserve uncertainty, leave absent information unknown, and avoid inventing vendors, budgets, or deadlines. JSON mode is requested when supported; compatibility errors fall back to the prompt-only contract. Prompt instructions improve behavior but are not a correctness boundary.
 
 ### Step 3: JSON parsing
-The analysis layer rejects empty output, strips optional Markdown fences, and parses JSON. Malformed JSON or an unexpected top-level structure raises an error.
+The analysis layer rejects empty output, strips optional Markdown fences, and parses JSON. If explanatory text appears before an otherwise valid JSON object, it extracts the object and continues through the same schema and evidence checks. Malformed JSON or an unexpected top-level structure raises a controlled error.
 
 ### Step 4: Evidence verification
-For each requirement, the application checks whether an evidence snippet is a non-empty string appearing verbatim in the original brief. A field is marked `stated` only if a non-empty value and at least one matching evidence snippet exist. Otherwise, the value becomes null, evidence is cleared, and status becomes `unknown`.
+For each requirement, the application checks whether an evidence snippet is a non-empty string appearing verbatim in the original brief. A field is marked `stated` only if a non-empty value and matching evidence exist without clear uncertainty cues. Qualifiers such as “might,” “approximately,” or “not final” cause supported values to be marked `tentative`. An explicitly undecided budget remains `unknown`. If usable evidence is absent, the value becomes null, evidence is cleared, and status becomes `unknown`.
 
 This prevents unsupported quotations from being accepted as evidence. It does not prove that a matching quote semantically supports the extracted value; a stronger implementation could track source offsets and add human-reviewed semantic-support tests.
 
@@ -99,7 +99,7 @@ For missing fields, application logic supplies standard questions about business
 If relevant fields are unknown, deterministic checks can flag unclear integration scope, an unspecified timeline, an unspecified budget, or missing security/privacy requirements. These are preliminary indicators, not a complete risk assessment.
 
 ### Step 9: Return the result
-The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback. The analysis endpoint also applies a configurable, process-local per-IP sliding-window limit (default 5 requests per 60 seconds), returning HTTP 429 and a `Retry-After` header. Upstream OpenRouter rate-limit/quota errors are mapped to a generic HTTP 503 with a retry hint; provider-specific details are not exposed.
+The API returns a structured response. Analysis failures are logged server-side and exposed through a controlled HTTP error rather than returning a raw traceback. The analysis endpoint also applies a configurable, process-local per-IP sliding-window limit (default 5 requests per 60 seconds), returning HTTP 429 and a `Retry-After` header. Upstream OpenRouter rate-limit/quota errors (including HTTP 402/429) are mapped to a generic HTTP 503 with a retry hint; provider-specific details are not exposed. Provider timeouts return HTTP 504, and the dashboard distinguishes timeout, connection, and API errors. The dashboard's default request timeout is longer than the configured model timeout to account for slower model responses.
 
 ## 6. Prompt Engineering and Reliability
 
