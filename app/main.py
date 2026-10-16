@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import Depends, FastAPI, HTTPException
+from openai import APITimeoutError
 from pydantic import BaseModel, Field
 
 from app.llm import analyze_brief
@@ -43,11 +44,20 @@ def health():
 def analyze(request: AnalyzeRequest):
     try:
         return analyze_brief(request.brief)
+    except APITimeoutError as exc:
+        logger.warning("Analysis provider timed out")
+        raise HTTPException(
+            status_code=504,
+            detail="The analysis provider took too long to respond. Please retry.",
+        ) from exc
     except ProviderRateLimitError as exc:
         logger.warning("Analysis provider rate limit/quota reached")
         raise HTTPException(
             status_code=503,
-            detail="The analysis provider is temporarily rate-limiting requests or has reached its quota. Please retry later.",
+            detail=(
+                "The analysis provider is temporarily rate-limiting requests "
+                "or has reached its quota. Please retry later."
+            ),
             headers={"Retry-After": "30"},
         ) from exc
     except Exception as exc:
