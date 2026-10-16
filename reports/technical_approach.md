@@ -2,7 +2,7 @@
 
 **Project:** Cynbit Discovery Intelligence  
 **Assessment:** AI/ML Engineer Intern  
-**Implementation status:** API analysis flow has been exercised successfully; dashboard and evaluation should be verified before submission.
+**Implementation status:** FastAPI backend and Streamlit dashboard are deployed and have been exercised together. The backend retries once with stricter instructions when the model returns malformed/non-JSON content. Offline tests and the labeled model evaluation should be run before making any claims about measured accuracy.
 
 ## 1. Problem and Design Goals
 
@@ -106,7 +106,7 @@ The API returns a structured response. Analysis failures are logged server-side 
 
 The prototype uses a constrained extraction task rather than asking the model to independently design a complete solution. Prompt priorities are faithfulness, evidence-backed extraction, explicit unknowns, consistent JSON, and useful questions.
 
-For a production implementation, consider provider-supported JSON-schema output, bounded retry logic for transient failures, request timeouts, versioned prompts and model identifiers, and logging validation failures without logging confidential briefs. Schema validity is not the same as factual correctness.
+The current implementation requests JSON mode where supported and retries once with stricter instructions if the response cannot be parsed as a JSON object. This bounded retry helps recover from occasional non-JSON responses from free-model routing, but it does not guarantee success. For a production implementation, consider provider-supported JSON-schema output, selective retries for transient provider failures, versioned prompts and model identifiers, and logging validation failures without logging confidential briefs. Schema validity is not the same as factual correctness.
 
 ## 7. Evaluation
 
