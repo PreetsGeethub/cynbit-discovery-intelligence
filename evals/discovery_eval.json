@@ -1,0 +1,321 @@
+{
+  "description": "Synthetic labeled evaluation set for requirement-status extraction. Expected labels are manually specified; scores measure model output against these labels and do not prove semantic correctness.",
+  "fields": [
+    "project_goal",
+    "target_users",
+    "integrations",
+    "timeline",
+    "budget",
+    "security_requirements"
+  ],
+  "cases": [
+    {
+      "id": "complete_support_portal",
+      "brief": "We need a customer support portal for 50 internal support agents. It must integrate with Salesforce and our existing customer database. The portal should launch within 12 weeks. We have an approved budget of $30,000. It will process customer contact details and requires role-based access control.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "stated",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "stated"
+      },
+      "value_contains": {
+        "project_goal": [
+          "support portal"
+        ],
+        "target_users": [
+          "50"
+        ],
+        "integrations": [
+          "salesforce"
+        ],
+        "timeline": [
+          "12 weeks"
+        ],
+        "budget": [
+          "30,000"
+        ],
+        "security_requirements": [
+          "role-based access control"
+        ]
+      }
+    },
+    {
+      "id": "vague_early_brief",
+      "brief": "We are exploring a better internal tool for our operations team. We want to understand what might be feasible before committing to a plan.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "unknown",
+        "budget": "unknown",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "internal tool"
+        ],
+        "target_users": [
+          "operations"
+        ]
+      }
+    },
+    {
+      "id": "marketing_site",
+      "brief": "Build a marketing website for a new accounting consultancy. The target audience is small-business owners. We want to launch in six weeks with a budget of $8,000.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "marketing website"
+        ],
+        "target_users": [
+          "small-business"
+        ],
+        "timeline": [
+          "six weeks"
+        ],
+        "budget": [
+          "8,000"
+        ]
+      }
+    },
+    {
+      "id": "security_heavy",
+      "brief": "Create a patient appointment portal for clinic staff and patients. It must use multi-factor authentication and role-based access controls. Patient health information will be stored. Launch is planned for October 2027.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "stated",
+        "budget": "unknown",
+        "security_requirements": "stated"
+      },
+      "value_contains": {
+        "project_goal": [
+          "appointment portal"
+        ],
+        "target_users": [
+          "patients"
+        ],
+        "timeline": [
+          "october 2027"
+        ],
+        "security_requirements": [
+          "multi-factor authentication"
+        ]
+      }
+    },
+    {
+      "id": "integrations_only_partial",
+      "brief": "We need an inventory dashboard for warehouse managers. It must connect to SAP and a PostgreSQL database. The project budget is capped at $15,000.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "stated",
+        "timeline": "unknown",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "inventory dashboard"
+        ],
+        "target_users": [
+          "warehouse"
+        ],
+        "integrations": [
+          "sap"
+        ],
+        "budget": [
+          "15,000"
+        ]
+      }
+    },
+    {
+      "id": "timeline_ambiguous",
+      "brief": "We need a booking system for a team of 12 coordinators. It should launch soon. The approved budget is $5,000.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "booking system"
+        ],
+        "target_users": [
+          "12"
+        ],
+        "timeline": [
+          "soon"
+        ],
+        "budget": [
+          "5,000"
+        ]
+      }
+    },
+    {
+      "id": "minimal_brief",
+      "brief": "Please help us improve our customer onboarding process.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "unknown",
+        "integrations": "unknown",
+        "timeline": "unknown",
+        "budget": "unknown",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "onboarding"
+        ]
+      }
+    },
+    {
+      "id": "privacy_requirement",
+      "brief": "Build a customer feedback application used by 20 support representatives. It must not retain personal data longer than 30 days and must encrypt customer comments at rest. We need it integrated with Zendesk. Delivery is required by March 2027.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "stated",
+        "timeline": "stated",
+        "budget": "unknown",
+        "security_requirements": "stated"
+      },
+      "value_contains": {
+        "project_goal": [
+          "feedback"
+        ],
+        "target_users": [
+          "20"
+        ],
+        "integrations": [
+          "zendesk"
+        ],
+        "timeline": [
+          "march 2027"
+        ],
+        "security_requirements": [
+          "30 days"
+        ]
+      }
+    },
+    {
+      "id": "budget_and_security_only",
+      "brief": "Develop an internal document search tool for legal staff. Budget is $22,000. Access must be restricted by role, and confidential documents must not be exposed to unauthorized users.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "unknown",
+        "budget": "stated",
+        "security_requirements": "stated"
+      },
+      "value_contains": {
+        "project_goal": [
+          "document search"
+        ],
+        "target_users": [
+          "legal"
+        ],
+        "budget": [
+          "22,000"
+        ],
+        "security_requirements": [
+          "role"
+        ]
+      }
+    },
+    {
+      "id": "crm_migration",
+      "brief": "Migrate customer records from HubSpot into Salesforce for a sales team of 35 people. The migration must finish by December 15, 2026. Budget is $12,500.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "stated",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "migrate"
+        ],
+        "target_users": [
+          "35"
+        ],
+        "integrations": [
+          "hubspot"
+        ],
+        "timeline": [
+          "december 15"
+        ],
+        "budget": [
+          "12,500"
+        ]
+      }
+    },
+    {
+      "id": "contradictory_timeline",
+      "brief": "Build a supplier onboarding portal for 18 procurement users. The brief first says launch by June 2027, but later says the required launch date is September 2027. Budget is $40,000.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "unknown",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "supplier onboarding"
+        ],
+        "target_users": [
+          "18"
+        ],
+        "budget": [
+          "40,000"
+        ]
+      },
+      "notes": "Timeline is present but contradictory; evaluator should flag the conflict in questions or risks. Status accuracy alone does not measure contradiction handling."
+    },
+    {
+      "id": "no_vendor_assumption",
+      "brief": "Create a scheduling tool for 8 field technicians. It should be ready in 10 weeks. The team has approved $6,500. No external system has been selected or confirmed for integration.",
+      "expected_status": {
+        "project_goal": "stated",
+        "target_users": "stated",
+        "integrations": "stated",
+        "timeline": "stated",
+        "budget": "stated",
+        "security_requirements": "unknown"
+      },
+      "value_contains": {
+        "project_goal": [
+          "scheduling tool"
+        ],
+        "target_users": [
+          "8"
+        ],
+        "timeline": [
+          "10 weeks"
+        ],
+        "budget": [
+          "6,500"
+        ]
+      },
+      "notes": "Integrations are stated as no confirmed integration; value should not invent a vendor."
+    }
+  ]
+}
